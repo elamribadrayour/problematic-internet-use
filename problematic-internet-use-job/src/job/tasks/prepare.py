@@ -57,43 +57,42 @@ def get_raw_data(cache_path: str, con: duckdb.DuckDBPyConnection, force: bool) -
         os.path.join(dir_name, "**/*.parquet") for dir_name in local_dirs_parquet
     ]
     logging.info(f"reading parquet files from directories: {local_paths_parquet}")
-    # query = f"""
-    #     CREATE {condition} accelerometer AS
-    #     SELECT * FROM read_parquet({local_paths_parquet}, hive_partitioning=true);
-    # """
-    # con.execute(query=query)
+    query = f"""
+        CREATE {condition} accelerometer AS
+        SELECT * FROM read_parquet({local_paths_parquet}, hive_partitioning=true);
+    """
+    con.execute(query=query)
 
 
 def get_clean_data(con: duckdb.DuckDBPyConnection) -> None:
     logging.info("cleaning measurements data & building measurements clean table")
 
-    dataframe: pandas.DataFrame = con.query(
-        query="""SELECT * EXCLUDE(
-            "id",
-            "PCIAT-Season",
-            "PCIAT-PCIAT_01",
-            "PCIAT-PCIAT_02",
-            "PCIAT-PCIAT_03",
-            "PCIAT-PCIAT_04",
-            "PCIAT-PCIAT_05",
-            "PCIAT-PCIAT_06",
-            "PCIAT-PCIAT_07",
-            "PCIAT-PCIAT_08",
-            "PCIAT-PCIAT_09",
-            "PCIAT-PCIAT_10",
-            "PCIAT-PCIAT_11",
-            "PCIAT-PCIAT_12",
-            "PCIAT-PCIAT_13",
-            "PCIAT-PCIAT_14",
-            "PCIAT-PCIAT_15",
-            "PCIAT-PCIAT_16",
-            "PCIAT-PCIAT_17",
-            "PCIAT-PCIAT_18",
-            "PCIAT-PCIAT_19",
-            "PCIAT-PCIAT_20",
-            "PCIAT-PCIAT_Total"
-        ) FROM measurements""",
-    ).fetchdf()
+    dataframe = con.execute(
+        query="""
+        SELECT
+            id,
+            ARRAY_AGG(step ORDER BY step ASC) AS step,
+            ARRAY_AGG(X ORDER BY step ASC) AS X,
+            ARRAY_AGG(Y ORDER BY step ASC) AS Y,
+            ARRAY_AGG(Z ORDER BY step ASC) AS Z,
+            ARRAY_AGG(enmo ORDER BY step ASC) AS enmo,
+            ARRAY_AGG(anglez ORDER BY step ASC) AS anglez,
+            ARRAY_AGG(light ORDER BY step ASC) AS light,
+            ARRAY_AGG(battery_voltage ORDER BY step ASC) AS battery_voltage,
+            ARRAY_AGG(time_of_day ORDER BY step ASC) AS time_of_day,
+            ARRAY_AGG(weekday ORDER BY step ASC) AS weekday,
+            ARRAY_AGG(quarter ORDER BY step ASC) AS quarter,
+            ARRAY_AGG(relative_date_PCIAT ORDER BY step ASC) AS relative_date_PCIAT,
+            ARRAY_AGG("non-wear_flag" ORDER BY step ASC) AS "non-wear_flag"
+        FROM accelerometer AS a
+        WHERE id = '00115b9f'
+        GROUP BY id
+        LIMIT 1;
+        """,
+    ).fetch_df()
+    logging.info(dataframe)
+    dataframe.to_json("/code/data/sample.jsonl", lines=True, orient="records")
+    exit(0)
 
     logging.info("creating data type column")
     dataframe["data_type"] = dataframe["filename"].apply(
@@ -182,7 +181,8 @@ def get_clean_data(con: duckdb.DuckDBPyConnection) -> None:
     train_set, eval_set = train_test_split(train_set, test_size=0.2, random_state=42)
     eval_set["data_type"] = "eval"
     dataframe = pandas.concat([train_set, eval_set, test_set])
-    con.execute("CREATE OR REPLACE TABLE measurements_clean AS SELECT * FROM dataframe")
+    con.execute("CREATE OR REPLACE TABLE dataset AS SELECT * FROM dataframe")
+
     return
 
 

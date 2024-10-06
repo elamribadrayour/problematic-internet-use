@@ -3,8 +3,8 @@
 import os
 import logging
 
-import pandas
 import numpy
+import pandas
 import duckdb
 import joblib
 from sklearn.pipeline import Pipeline
@@ -20,13 +20,13 @@ class BaseModel:
     @staticmethod
     def train(con: duckdb.DuckDBPyConnection, model: Pipeline, params: dict) -> None:
         x_train = con.execute(
-            query="""SELECT * EXCLUDE("sii", "data_type") FROM measurements_clean WHERE data_type = ?""",
+            query="""SELECT * EXCLUDE("sii", "data_type", "id") FROM dataset WHERE data_type = ?""",
             parameters=["train"],
         ).fetchdf()
 
         y_train = (
             con.execute(
-                query='SELECT "sii" FROM measurements_clean WHERE data_type = ?',
+                query='SELECT "sii" FROM dataset WHERE data_type = ?',
                 parameters=["train"],
             )
             .fetchdf()
@@ -37,8 +37,8 @@ class BaseModel:
             estimator=model, param_grid=params, cv=5, scoring="accuracy", n_jobs=-1
         )
         grid_search.fit(x_train, y_train)
-        logging.info(f"Best parameters found: {grid_search.best_params_}")
-        logging.info(f"Best cross-validated score: {grid_search.best_score_}")
+        logging.info(f"best parameters found: {grid_search.best_params_}")
+        logging.info(f"best cross-validated score: {grid_search.best_score_}")
         model = grid_search.best_estimator_
         model.fit(x_train, y_train)
         return model
@@ -72,13 +72,13 @@ class BaseModel:
     @staticmethod
     def evaluate(model: Pipeline, con: duckdb.DuckDBPyConnection) -> None:
         x_eval = con.execute(
-            query="""SELECT * EXCLUDE("sii", "data_type") FROM measurements_clean WHERE data_type = ?""",
+            query="""SELECT * EXCLUDE("sii", "data_type", "id") FROM dataset WHERE data_type = ?""",
             parameters=["eval"],
         ).fetchdf()
         y_pred = BaseModel.predict(model=model, x=x_eval)
         y_eval = (
             con.execute(
-                query='SELECT "sii" FROM measurements_clean WHERE data_type = ?',
+                query='SELECT "sii" FROM dataset WHERE data_type = ?',
                 parameters=["eval"],
             )
             .fetchdf()
@@ -92,7 +92,7 @@ class BaseModel:
     @staticmethod
     def test(model: Pipeline, con: duckdb.DuckDBPyConnection) -> numpy.ndarray:
         x_eval = con.execute(
-            query="""SELECT * EXCLUDE("id", "sii", "data_type") FROM measurements_clean WHERE data_type = ?""",
+            query="""SELECT * EXCLUDE("id", "sii", "data_type") FROM dataset WHERE data_type = ?""",
             parameters=["test"],
         ).fetchdf()
         return BaseModel.predict(model=model, x=x_eval)
