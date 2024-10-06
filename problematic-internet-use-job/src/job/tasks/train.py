@@ -9,6 +9,7 @@ import helpers.logger
 from models.model_0 import Model0  # noqa F401
 from models.model_1 import Model1  # noqa F401
 from models.model_2 import Model2  # noqa F401
+from models.model_3 import Model3  # noqa F401
 
 
 def get_db(cache_path: str, exec_date: str) -> duckdb.DuckDBPyConnection:
@@ -20,10 +21,10 @@ def get_db(cache_path: str, exec_date: str) -> duckdb.DuckDBPyConnection:
 def run(cache_path: str, exec_date: str) -> None:
     helpers.logger.init()
     con = get_db(cache_path=cache_path, exec_date=exec_date)
-    model, params = Model1.get_model(con=con)
-    model = Model1.train(
+    model, params = Model3.get_model(con=con)
+    model = Model3.train(
         con=con,
         model=model,
         params=params,
     )
-    Model1.save(model=model, cache_path=cache_path, exec_date=exec_date)
+    Model3.save(model=model, cache_path=cache_path, exec_date=exec_date)
