@@ -16,7 +16,7 @@ class Model2(BaseModel):
     def get_model(con: duckdb.DuckDBPyConnection) -> tuple[Pipeline, dict]:
         logging.info("building xgboost classifier")
         x_train = con.execute(
-            query='SELECT * EXCLUDE("data_type", "sii") FROM measurements_clean WHERE data_type = ? LIMIT 1',
+            query='SELECT * EXCLUDE("data_type", "sii") FROM dataset WHERE data_type = ? LIMIT 1',
             parameters=["train"],
         ).fetchdf()
         preprocessor = ColumnTransformer(

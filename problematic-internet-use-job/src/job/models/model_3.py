@@ -21,7 +21,7 @@ class Model3(BaseModel):
 
         # Fetch a single row to infer column types for preprocessing
         x_train = con.execute(
-            query='SELECT * EXCLUDE("data_type", "sii") FROM datasetn WHERE data_type = ? LIMIT 1',
+            query='SELECT * EXCLUDE("data_type", "sii") FROM dataset WHERE data_type = ? LIMIT 1',
             parameters=["train"],
         ).fetchdf()
 
