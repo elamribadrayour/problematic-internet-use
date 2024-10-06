@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  "problematic-internet-use-job-prepare":
+    user: root
+    image: "problematic-internet-use-job:0.1"
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      FORCE: "true"
+      CACHE_PATH: "/code/data"
+      EXEC_DATE: "2024-09-26-16-53-04"
+    volumes:
+      - ./src/job/:/code/job
+      - ../problematic-internet-use-cache:/code/data
+    command: python main.py prepare
+
+  "problematic-internet-use-job-train":
+    user: root
+    image: "problematic-internet-use-job:0.1"
+    environment:
+      CACHE_PATH: "/code/data"
+      EXEC_DATE: "2024-09-26-16-53-04"
+    volumes:
+      - ./src/job/:/code/job
+      - ../problematic-internet-use-cache:/code/data
+    command: python main.py train
+
+  "problematic-internet-use-job-evaluate":
+    user: root
+    image: "problematic-internet-use-job:0.1"
+    environment:
+      CACHE_PATH: "/code/data"
+      EXEC_DATE: "2024-09-26-16-53-04"
+    volumes:
+      - ./src/job/:/code/job
+      - ../problematic-internet-use-cache:/code/data
+    command: python main.py evaluate
+
+  "problematic-internet-use-job-submit":
+    user: root
+    image: "problematic-internet-use-job:0.1"
+    environment:
+      CACHE_PATH: "/code/data"
+      MODEL_NAME: "random_forest_regressor"
+    volumes:
+      - ./src/job/:/code/job
+      - ../problematic-internet-use-cache:/code/data
+    command: python main.py submit
+ 
